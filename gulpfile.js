@@ -11,7 +11,7 @@ gulp.task("minifyJS", function () {
 });
 gulp.task("minifyJSAll", function () {
     gulp.src(["jquery.validate.unobtrusive.dynamic.js", "jquery.validate.unobtrusive.globalize.js"], { base: "." })
-        .concat("jquery.validate.unobtrusive.extensions.min.js")
+        .pipe(concat("jquery.validate.unobtrusive.extensions.min.js"))
         .pipe(uglify())
         .pipe(gulp.dest("."));
 });
