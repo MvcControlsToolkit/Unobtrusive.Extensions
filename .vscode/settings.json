@@ -1,0 +1,4 @@
+// Inserire le impostazioni in questo file per sovrascrivere quelle utente e predefinite.
+{
+    "git.path": "https://github.com/MvcControlsToolkit/Unobtrusive.Extensions.git"
+}
