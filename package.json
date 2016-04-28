@@ -34,7 +34,8 @@
     ],
     "dependencies": {
         "jquery": ">=1.8",
-        "jquery-validation-unobtrusive": ">=3.2.6"
+        "jquery-validation-unobtrusive": ">=3.2.6",
+        "globalize": ">=1.1.1"
     },
     "devDependencies": {
         "gulp": "3.9.1",
