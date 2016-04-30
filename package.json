@@ -30,7 +30,8 @@
         "jquery.validation.d.ts",
         "jquery.validate.unobtrusive.dynamic.min.js",
         "query.validate.unobtrusive.globalize.min.js",
-        "jquery.validate.unobtrusive.extensions.min.js"
+        "jquery.validate.unobtrusive.extensions.min.js",
+        "LICENSE.txt"
     ],
     "dependencies": {
         "jquery": ">=1.8",
