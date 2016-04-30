@@ -67,6 +67,7 @@
     var parsers = [null, null, null, null, null, null, null, null, null];
     var neutralParsers = [null, null, null, null, null, null, null, null, null];
     var adders = [null, null, null, null, null, null, null, null, null];
+    var formatters = [null, null, null, null, null, null, null, null, null];
     function getType(jElement) {
         return parseInt(jElement.attr("data-val-correcttype-type"));
     }
@@ -105,14 +106,17 @@
 
 
         dateParser = support.date > 2 ? Globalize.dateParser({ raw: "yyyy-MM-dd" }) : Globalize.dateParser(options.dateFormat);
+        var dateFormatter = support.date > 2 ? Globalize.dateFormatter({ raw: "yyyy-MM-dd" }) : Globalize.dateFormatter(options.dateFormat);
 
         neutralTimeParser = Globalize.dateParser({ raw: "HH:mm:ss" });
         timeParser = support.time> 2 ?  neutralTimeParser : Globalize.dateParser(options.timeFormat);
         timeParser1 = support.time>2 ?  Globalize.dateParser({ raw: "HH:mm" }) : Globalize.dateParser(options.timeFormat1);
+        var timeFormatter = support.time>2 ?  Globalize.dateFormatter({ raw: "HH:mm" }) : Globalize.dateFormatter(options.timeFormat);
 
         neutralDateTimeParser = Globalize.dateParser({ raw: "yyyy-MM-ddTHH:mm:ss" })
         dateTimeParser = support.datetime > 2 ? neutralDateTimeParser : Globalize.dateParser(options.datetimeFormat);
         dateTimeParser1 = support.datetime > 2 ? Globalize.dateParser({ raw: "yyyy-MM-ddTHH:mm" }) : Globalize.dateParser(options.datetimeFormat1);
+        var dateTimeFormatter = support.datetime > 2 ? Globalize.dateFormatter({ raw: "yyyy-MM-ddTHH:mm" }) : Globalize.dateFormatter(options.datetimeFormat1);
 
         neutralMonthParser = Globalize.dateParser({ raw: "yyyy-MM" });
         neutralWeekParser = support.week > 2 ? 
@@ -130,9 +134,13 @@
             };
 
         monthParser = support.month > 2 ? neutralMonthParser : Globalize.dateParser(options.monthFormat);
+        monthFormatter = support.month > 2 ? Globalize.dateFormatter({ raw: "yyyy-MM" }) : Globalize.dateFormatter(options.monthFormat);
+
         weekParser = support.week > 2 ? function (x) { return x } : dateParser;
+        weekFormatter = support.week > 2 ? function (x) { return x } : dateFormatter;
 
         numberParser = support.number > 2 ? parseFloat : Globalize.numberParser();
+        var numberFormatter = support.number > 2 ? function (x) { return x } : Globalize.numberFormatter();
 
         numberAdder = function (base, value) {
             if (!base ) return null;
@@ -159,37 +167,48 @@
                 return weekHelp.value;
             } :
             dateTimeAdder;
+        
+        
+        
+        
 
         parsers[0] = function (x) { return x };
         neutralParsers[0] = parsers[0];
         adders[0] = function (x) { return x };
+        formatters[0] = parsers[0];
 
         parsers[1] = parsers[2] = parsers[3] = numberParser;
         neutralParsers[1] = neutralParsers[2] = neutralParsers[3] = neutralNumberParser;
         adders[1] = adders[2] = adders[3] = numberAdder;
+        formatters[1] = formatters[2] = formatters[3] = numberFormatter;
 
         parsers[4] = function (x) {
             return timeParser(x) || timeParser1(x);
         }
         neutralParsers[4] = neutralTimeParser;
-        
+        formatters[4] = timeFormatter;
 
         parsers[5] = dateParser;
         neutralParsers[5] = neutralDateTimeParser;
+        formatters[5] = dateFormatter;
 
         parsers[6] = function (x) {
             return dateTimeParser(x) || dateTimeParser1(x);
         }
         neutralParsers[6] = neutralDateTimeParser;
         adders[4] = adders[5] = adders[6] = dateTimeAdder;
+        formatters[6] = dateTimeFormatter;
+        
 
         parsers[7] = weekParser;
         neutralParsers[7] = neutralWeekParser;
         adders[7] = weekAdder;
+        formatters[7] = weekFormatter;
 
         parsers[8] = monthParser;
         neutralParsers[8] = neutralMonthParser;
         adders[8] = dateTimeAdder;
+        formatters[8] = monthFormatter;
 
         if (enhancer && toptions) {
             
@@ -224,14 +243,11 @@
             if (!handlers.enhance.number) handlers.enhance.number = enhanceNumeric;
             if (!handlers.enhance.range) handlers.enhance.range = enhanceNumeric;
             if (!handlers.translateVal) {
-                var numberFormatter = Globalize.numberFormatter();
-                var timeFormatter = Globalize.dateFormatter(options.timeFormat);
+                
                 var sTimeParser = Globalize.dateParser({ raw: "HH:mm" });
                 var gtimeParser = function (x) { return neutralTimeParser(x) || sTimeParser(x);};
-                var dateTimeFormatter = Globalize.dateFormatter(options.datetimeFormat1);
                 var sDateTimeParser = Globalize.dateParser({ raw: "yyyy-MM-ddTHH:mm" });
                 var gDatetimeParser = function (x) { return neutralDateTimeParser(x) || sDateTimeParser(x);};
-                var dateFormatter = Globalize.dateFormatter(options.dateFormat);
                 var neutralDateParser=Globalize.dateParser({ raw: "yyyy-MM-dd" });
                 var dict = {
                     range: function (x) { return x ? numberFormatter(parseFloat(x)) : ""; },
@@ -264,24 +280,52 @@
         var type = getType($(element));
         if (!value) return true;
         var parser = parsers[type];
+        var go = param[1];
+        if (go && $(element).is(":focus")) return true;
         var neutralParser = neutralParsers[type];
-        return parser(value) >= neutralParser(param);
+        if (go) {
+            var val = parser(value);
+            var otherVal = neutralParser(param[0]);
+            if (val < otherVal) $(element).val(formatters[type](otherVal));
+            return true;
+        }
+        else return parser(value) >= neutralParser(param[0]);
     }
     $.validator.methods.maxE = function (value, element, param) {
         if(!enhancer) initialize();
         var type = getType($(element));
         if (!value) return true;
         var parser = parsers[type];
+        var go = param[1];
+        if (go && $(element).is(":focus")) return true;
         var neutralParser = neutralParsers[type];
-        return parser(value) <= neutralParser(param);
+        if (go) {
+            var val = parser(value);
+            var otherVal = neutralParser(param[0]);
+            if (val > otherVal) $(element).val(formatters[type](otherVal));
+            return true;
+        }
+        else return parser(value) <= neutralParser(param[0]);
     }
     $.validator.methods.rangeE = function (value, element, param) {
         if(!enhancer) initialize();
         var type = getType($(element));
         if (!value) return true;
         var parser = parsers[type];
+        var go = param[2];
+        if (go && $(element).is(":focus")) return true;
         var neutralParser = neutralParsers[type];
-        return parser(value) <= neutralParser(param[1]) && parser(value) >= neutralParser(param[0]);
+        if (go) {
+            var val = parser(value);
+            var otherVal = neutralParser(param[0]);
+            if (val < otherVal) $(element).val(formatters[type](otherVal));
+            else {
+                otherVal = neutralParser(param[1]);
+                if (val > otherVal) $(element).val(formatters[type](otherVal));
+            }
+            return true;
+        }
+        else return parser(value) <= neutralParser(param[1]) && parser(value) >= neutralParser(param[0]);
     }
     $.validator.methods.correcttype = function (value, element, param) {
         if(!enhancer) initialize();
@@ -303,16 +347,24 @@
         var minDelays = param[1];
         var maxs = param[2];
         var maxDelays = param[3];
+        var go = param[4];
+        if (go && $(element).is(":focus")) return true;
         var parser = parsers[type];
         var adder = adders[type];
         var tvalue = parser(value);
+        var min, max, violated;
         for (var i = 0; i < mins.length; i++) {
             var otherVal = mins[i].value;
             if (!otherVal) continue;
             otherVal = parser(otherVal);
             if (!otherVal) continue;
-            otherVal=adder(otherVal, minDelays[i]);
-            if (tvalue < otherVal) return false;
+            otherVal = adder(otherVal, minDelays[i]);
+            if (go && !(otherVal <= min)) min = otherVal;
+            if (tvalue < otherVal) {
+                if(go) violated=true;
+                else return false;
+            }
+            
         }
         for (var i = 0; i < maxs.length; i++) {
             var otherVal = maxs[i].value;
@@ -320,7 +372,18 @@
             otherVal = parser(otherVal);
             if (!otherVal) continue;
             otherVal=adder(otherVal, maxDelays[i]);
-            if (tvalue > otherVal) return false;
+            if (go && !(otherVal >= max)) max = otherVal;
+            if (tvalue > otherVal) {
+                if(go) violated=true;
+                else return false;
+            }
+        }
+        if (go && violated) {
+            if (max < min) return false;
+            if (max !== undefined) {
+                $(element).val(formatters[type](max))
+            }
+            else if (min !== undefined) $(element).val(formatters[type](min))
         }
         return true;
     }
@@ -333,19 +396,21 @@
         if (options.message) {
             options.messages[ruleName] = options.message;
         }
+        
     }
     adapters.addMinMax = function (adapterName, minRuleName, maxRuleName, minMaxRuleName, minAttribute, maxAttribute) {
-        return this.add(adapterName, [minAttribute || "min", maxAttribute || "max"], function (options) {
+        return this.add(adapterName, [minAttribute || "min", maxAttribute || "max", "go"], function (options) {
             var min = options.params.min,
-                max = options.params.max;
+                max = options.params.max,
+                go = options.params.go == "true";
             if ((min || min === 0) && (max || max === 0)) {
-                setValidationValues(options, minMaxRuleName, [min, max]);
+                setValidationValues(options, minMaxRuleName, [min, max, go]);
             }
             else if (min || min === 0) {
-                setValidationValues(options, minRuleName, min);
+                setValidationValues(options, minRuleName, [min, go]);
             }
             else if (max || max === 0) {
-                setValidationValues(options, maxRuleName, max);
+                setValidationValues(options, maxRuleName, [max, go]);
             }
         });
     };
@@ -361,24 +426,25 @@
     adapters.addMinMax("range", "minE", "maxE", "rangeE");
     
     if (enhancer) {
-        function addHandler(el, limits) {
+        function addHandler(el, limits, preventKeyUp) {
             if (!limits) return;
             for (var i = 0; i < limits.length; i++) {
-                enhancer.dependency("drange", limits[i], el, ["blur", "keyup"], function (t, s) {
+                enhancer.dependency("drange", limits[i], el, preventKeyUp? ["blur"] : ["blur", "keyup"], function (t, s) {
                     $(t).closest('form').validate().element(t);
                 });
             }
         }
         adapters.addDRange = function (adapterName, ruleName, minsName, minDelaysName, maxsName, maxDelaysName) {
-            return this.add(adapterName, [minsName, minDelaysName, maxsName, maxDelaysName], function (options) {
+            return this.add(adapterName, [minsName, minDelaysName, maxsName, maxDelaysName, "go"], function (options) {
                 var el = options.element;
                 var mins = otherElements(el, options.params[minsName]);
                 var maxs = otherElements(el, options.params[maxsName]); 
-                addHandler(el, mins);
-                addHandler(el, maxs);
+                addHandler(el, mins, options.params.go);
+                addHandler(el, maxs, options.params.go);
                 var mdelays = options.params[minDelaysName].split(" ");
                 var maxdelays = options.params[maxDelaysName].split(" ");
-                setValidationValues(options, ruleName, [mins, mdelays, maxs, maxdelays]);
+                var go = options.params.go == "true";
+                setValidationValues(options, ruleName, [mins, mdelays, maxs, maxdelays, go]);
             });
         };
         adapters.addDRange("drange", "drange", "dmins", "dminds", "dmaxs", "dmaxds");
