@@ -49,6 +49,11 @@
         $.validator.unobtrusive.parseElement(selector, true);
         registerFormFix(selector);
     }
-    var enhancer = window["enhancer"];
-    if (enhancer) enhancer.register($.validator.unobtrusive.parseDynamic, false, null, "dynamic validation");
+    var mvcct = window["mvcct"]||{};
+    var enhancer = mvcct["enhancer"];
+    if (enhancer) enhancer.register(function(node, init){
+            if(init) $.validator.unobtrusive.parse(document);
+            else $.validator.unobtrusive.parseDynamic(node);
+        }, 
+        true, null, "unobtrusive validation");
 })(jQuery);

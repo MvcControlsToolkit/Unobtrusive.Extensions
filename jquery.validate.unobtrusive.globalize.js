@@ -1,6 +1,4 @@
-﻿/// <reference path="../../node_modules/globalize/dist/globalize.js" />
-/// <reference path="../../node_modules/globalize/dist/globalize/number.js" />
-/// <reference path="../../node_modules/globalize/dist/globalize/date.js" />
+﻿
 (function ($) {
     
     var mvcct = window["mvcct"] = window["mvcct"] || {};
@@ -28,39 +26,13 @@
         support = null;
     }
     var numberRegEx = null;
-   
+    
     $.validator.attributeRules = function () { };
     $.validator.globalization = {};
     var initialized = false;
-    var defaults = {
-        dateFormat: { date: "short" },
-        timeFormat: { skeleton: "Hms" },
-        timeFormat1: { skeleton: "Hm" },
-        datetimeFormat: { skeleton: "yMdHms" },
-        datetimeFormat1: { skeleton: "yMdHm" },
-        monthFormat: { date: "short" },
-        weekFormat: { date: "short" }
-    };
-    
-
-    var options={};
-    var dateParser;
-
-    var timeParser;
-    var timeParser1;
-    var neutralTimeParser;
-    var dateTimeParser;
-    var dateTimeParser1;
-    var neutralDateTimeParser;
-    
-    var neutralMonthParser;
-    var neutralWeekParser;
-    
-    var monthParser;
-    var weekParser;
-
+    var neutralTimeParser, neutralDateTimeParser, neutralMonthParser, neutralWeekParser, weekParser;
     var neutralNumberParser = parseFloat;
-    var numberParser;
+    
 
     var dateTimeAdder, weekAdder, numberAdder;
 
@@ -88,8 +60,24 @@
         for (var i = 0; i < names.length; i++) res.push(otherElement(el, names[i]));
         return res;
     }
+    function getDateOfISOWeek(cw) {
+                    var parts=cw.split('-W');
+                    
+                    var y=parseInt(parts[0]);
+                    var w = parseInt(parts[1]);
+                    
+                    var simple = new Date(Date.UTC(y, 0, 1 + (w - 1) * 7));
+                    var dow = simple.getDay();
+                    var ISOweekStart = simple;
+                    if (dow <= 4)
+                        ISOweekStart.setDate(simple.getDate() - simple.getDay() + 1);
+                    else
+                        ISOweekStart.setDate(simple.getDate() + 8 - simple.getDay());
+                    return ISOweekStart;
+                }
     function initialize(toptions) {
         if (initialized) return;
+        var Globalize = enhancer.Globalize();
         if (!support) support = mvcct.enhancer.getSupport().Html5InputSupport;
         var locale = Globalize.locale().attributes.language;
         var nInfos = Globalize.cldr.get('main/' + locale).numbers["symbols-numberSystem-latn"];
@@ -100,47 +88,20 @@
         else {
             numberRegEx = new RegExp("^[\\" + nInfos.plusSign + "\\" + nInfos.minusSign + "\\" + nInfos.decimal + "0-9]*$");
         };
-        $.extend(options, defaults);
-        $.extend(options, toptions.editFormats || {});
         
-
-
-        dateParser = support.date > 2 ? Globalize.dateParser({ raw: "yyyy-MM-dd" }) : Globalize.dateParser(options.dateFormat);
-        var dateFormatter = support.date > 2 ? Globalize.dateFormatter({ raw: "yyyy-MM-dd" }) : Globalize.dateFormatter(options.dateFormat);
-
         neutralTimeParser = Globalize.dateParser({ raw: "HH:mm:ss" });
-        timeParser = support.time> 2 ?  neutralTimeParser : Globalize.dateParser(options.timeFormat);
-        timeParser1 = support.time>2 ?  Globalize.dateParser({ raw: "HH:mm" }) : Globalize.dateParser(options.timeFormat1);
-        var timeFormatter = support.time>2 ?  Globalize.dateFormatter({ raw: "HH:mm" }) : Globalize.dateFormatter(options.timeFormat);
-
         neutralDateTimeParser = Globalize.dateParser({ raw: "yyyy-MM-ddTHH:mm:ss" })
-        dateTimeParser = support.datetime > 2 ? neutralDateTimeParser : Globalize.dateParser(options.datetimeFormat);
-        dateTimeParser1 = support.datetime > 2 ? Globalize.dateParser({ raw: "yyyy-MM-ddTHH:mm" }) : Globalize.dateParser(options.datetimeFormat1);
-        var dateTimeFormatter = support.datetime > 2 ? Globalize.dateFormatter({ raw: "yyyy-MM-ddTHH:mm" }) : Globalize.dateFormatter(options.datetimeFormat1);
 
         neutralMonthParser = Globalize.dateParser({ raw: "yyyy-MM" });
         neutralWeekParser = support.week > 2 ? 
             function (s) {
-                if (!s) return null;
-                parts=s.split("|");
-                return parts[0] ;
+                return s;
             }
             :
-            function(s){
-                if (!s) return null;
-                parts = s.split("|");
-                var subparts = parts[0].split("-W");
-                return new Date(subparts[0], parts[1], parts[2]);
-            };
+            getDateOfISOWeek;
 
-        monthParser = support.month > 2 ? neutralMonthParser : Globalize.dateParser(options.monthFormat);
-        monthFormatter = support.month > 2 ? Globalize.dateFormatter({ raw: "yyyy-MM" }) : Globalize.dateFormatter(options.monthFormat);
-
-        weekParser = support.week > 2 ? function (x) { return x } : dateParser;
-        weekFormatter = support.week > 2 ? function (x) { return x } : dateFormatter;
-
-        numberParser = support.number > 2 ? parseFloat : Globalize.numberParser();
-        var numberFormatter = support.number > 2 ? function (x) { return x } : Globalize.numberFormatter();
+        weekParser = support.week > 2 ? function (x) { return x } : function(x){return enhancer.parse("week", x)};
+        weekFormatter = support.week > 2 ? function (x) { return x } : function(x){return enhancer.format("week", x)};
 
         numberAdder = function (base, value) {
             if (!base ) return null;
@@ -177,27 +138,23 @@
         adders[0] = function (x) { return x };
         formatters[0] = parsers[0];
 
-        parsers[1] = parsers[2] = parsers[3] = numberParser;
+        parsers[1] = parsers[2] = parsers[3] = function(x){return enhancer.parse("number", x);};
         neutralParsers[1] = neutralParsers[2] = neutralParsers[3] = neutralNumberParser;
         adders[1] = adders[2] = adders[3] = numberAdder;
-        formatters[1] = formatters[2] = formatters[3] = numberFormatter;
+        formatters[1] = formatters[2] = formatters[3] = function(x){return enhancer.format("number", x);};
 
-        parsers[4] = function (x) {
-            return timeParser(x) || timeParser1(x);
-        }
+        parsers[4] = function(x){return enhancer.parse("time", x);};
         neutralParsers[4] = neutralTimeParser;
-        formatters[4] = timeFormatter;
+        formatters[4] = function(x){return enhancer.format("time", x);};
 
-        parsers[5] = dateParser;
+        parsers[5] = function(x){return enhancer.parse("date", x);};
         neutralParsers[5] = neutralDateTimeParser;
-        formatters[5] = dateFormatter;
+        formatters[5] = function(x){return enhancer.format("date", x);};
 
-        parsers[6] = function (x) {
-            return dateTimeParser(x) || dateTimeParser1(x);
-        }
+        parsers[6] = function(x){return enhancer.parse("datetime", x);};
         neutralParsers[6] = neutralDateTimeParser;
         adders[4] = adders[5] = adders[6] = dateTimeAdder;
-        formatters[6] = dateTimeFormatter;
+        formatters[6] = function(x){return enhancer.format("datetime", x);};
         
 
         parsers[7] = weekParser;
@@ -205,71 +162,10 @@
         adders[7] = weekAdder;
         formatters[7] = weekFormatter;
 
-        parsers[8] = monthParser;
+        parsers[8] = function(x){return enhancer.parse("month", x);};
         neutralParsers[8] = neutralMonthParser;
         adders[8] = dateTimeAdder;
-        formatters[8] = monthFormatter;
-
-        if (enhancer && toptions) {
-            
-            function numericInputCharHandler(charCode, el, decimalSeparator, plus, minus) {
-                var jEl = $(el);
-                var type = getType(jEl);
-                var canDecimal = type==3, canNegative = type != 1;
-                var min = jEl.attr("min");
-                if (min === undefined) min = jEl.attr("data-val-range-min");
-                if (min !== undefined && parseFloat(min) >= 0) canNegative = false;
-                if (charCode == 0 || charCode == 13 || charCode == 9 || charCode == 8 || (charCode >= 48 && charCode <= 57)) return true;
-                if (canNegative && (charCode == plus.charCodeAt(0) || charCode == minus.charCodeAt(0))) {
-                    var value = el.value;
-                    return value.indexOf(plus) < 0 && value.indexOf(minus) < 0;
-                }
-                if (canDecimal && charCode == decimalSeparator.charCodeAt(0)) {
-                    var value = el.value;
-                    return value.indexOf(decimalSeparator) < 0;
-                }
-                return false;
-            }
-            function enhanceNumeric(input) {
-                if (input.getAttribute("type") != "text") return;
-                $(input).bind('keypress', function (event) {
-                    return numericInputCharHandler(event.which, event.target, nInfos.decimal, nInfos.plusSign, nInfos.minusSign);
-                });
-            }
-            if (!toptions.browserSupport) toptions.browserSupport = {};
-            var handlers = toptions.browserSupport.handlers;
-            if (!handlers) handlers = toptions.browserSupport.handlers = {};
-            if (!handlers.enhance) handlers.enhance = {};
-            if (!handlers.enhance.number) handlers.enhance.number = enhanceNumeric;
-            if (!handlers.enhance.range) handlers.enhance.range = enhanceNumeric;
-            if (!handlers.translateVal) {
-                
-                var sTimeParser = Globalize.dateParser({ raw: "HH:mm" });
-                var gtimeParser = function (x) { return neutralTimeParser(x) || sTimeParser(x);};
-                var sDateTimeParser = Globalize.dateParser({ raw: "yyyy-MM-ddTHH:mm" });
-                var gDatetimeParser = function (x) { return neutralDateTimeParser(x) || sDateTimeParser(x);};
-                var neutralDateParser=Globalize.dateParser({ raw: "yyyy-MM-dd" });
-                var dict = {
-                    range: function (x) { return x ? numberFormatter(parseFloat(x)) : ""; },
-                    number: function (x) { return x ? numberFormatter(parseFloat(x)) : ""; },
-                    time: function (x) { return x ? timeFormatter(gtimeParser(x)) : ""; },
-                    datetime: function (x) { return x ? dateTimeFormatter(gDatetimeParser(x)) : ""; },
-                    date: function (x) { return x ? dateFormatter(neutralDateParser(x)) : ""; },
-                    month: function (x) { return x ? dateFormatter(neutralMonthParser(x)) : ""; },
-                    week: function (x, t, input) {
-                        var res = input.getAttribute("data-date-value");
-                        if (!res) return res;
-                        return dateFormatter(neutralDateParser(res));
-                    }
-
-                };
-                handlers.translateVal = function (value, type, input) {
-                    var tr = dict[type];
-                    if (tr) return tr(value, type, input);
-                    else return value;
-                };
-            }
-        }
+        formatters[8] = function(x){return enhancer.format("month", x);};
 
         
         initialized = true;
@@ -448,6 +344,6 @@
             });
         };
         adapters.addDRange("drange", "drange", "dmins", "dminds", "dmaxs", "dmaxds");
-        enhancer["register"](null, false, initialize, "html5 globalized fallback", true);
+        enhancer["register"](null, false, null, "html5 globalized fallback", initialize);
     }
 })(jQuery);
