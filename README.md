@@ -17,6 +17,8 @@ fill autoamtically all validation data- attributes based on .Net property valida
 However, it can be used with any server technology if all needed data- attributes are somehow inserted 
 in the input fields.
 
+**jquery-validation-unobtrusive-extensions is available both on bower and npm** 
+
 ## Validation rules
 
 All rules work both with Html5 inputs whose value format is international ISO, and falled back inputs 
