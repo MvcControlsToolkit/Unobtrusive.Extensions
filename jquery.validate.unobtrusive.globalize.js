@@ -25,7 +25,7 @@
     else {
         support = null;
     }
-    var numberRegEx = null;
+    var numberRegEx = null, rangeRegEx=null;
     
     $.validator.attributeRules = function () { };
     $.validator.globalization = {};
@@ -36,12 +36,13 @@
 
     var dateTimeAdder, weekAdder, numberAdder;
 
-    var parsers = [null, null, null, null, null, null, null, null, null];
-    var neutralParsers = [null, null, null, null, null, null, null, null, null];
-    var adders = [null, null, null, null, null, null, null, null, null];
-    var formatters = [null, null, null, null, null, null, null, null, null];
+    var parsers = [null, null, null, null, null, null, null, null, null, null, null, null, null, null];
+    var neutralParsers = [null, null, null, null, null, null, null, null, null, null, null, null, null, null];
+    var adders = [null, null, null, null, null, null, null, null, null, null, null, null, null, null];
+    var formatters = [null, null, null, null, null, null, null, null, null, null, null, null, null, null];
     function getType(jElement) {
-        return parseInt(jElement.attr("data-val-correcttype-type"));
+        return parseInt(jElement.attr("data-val-correcttype-type"))+(jElement.attr("data-is-range") 
+            || jElement.attr("type") == "range" ? 10 : 0);
     }
     function otherElement(el, ref) {
         var name = el.name;
@@ -88,7 +89,12 @@
         else {
             numberRegEx = new RegExp("^[\\" + nInfos.plusSign + "\\" + nInfos.minusSign + "\\" + nInfos.decimal + "0-9]*$");
         };
-        
+        if (support.range > 2) {
+            rangeRegEx = new RegExp("^[\+\-\.0-9]*$");
+        }
+        else {
+            rangeRegEx = new RegExp("^[\\" + nInfos.plusSign + "\\" + nInfos.minusSign + "\\" + nInfos.decimal + "0-9]*$");
+        };
         neutralTimeParser = Globalize.dateParser({ raw: "HH:mm:ss" });
         neutralDateTimeParser = Globalize.dateParser({ raw: "yyyy-MM-ddTHH:mm:ss" })
 
@@ -142,6 +148,11 @@
         neutralParsers[1] = neutralParsers[2] = neutralParsers[3] = neutralNumberParser;
         adders[1] = adders[2] = adders[3] = numberAdder;
         formatters[1] = formatters[2] = formatters[3] = function(x){return enhancer.format("number", x);};
+
+        parsers[11] = parsers[12] = parsers[13] = function(x){return enhancer.parse("range", x);};
+        neutralParsers[11] = neutralParsers[12] = neutralParsers[13] = neutralNumberParser;
+        adders[11] = adders[12] = adders[13] = numberAdder;
+        formatters[11] = formatters[12] = formatters[13] = function(x){return enhancer.format("range", x);};
 
         parsers[4] = function(x){return enhancer.parse("time", x);};
         neutralParsers[4] = neutralTimeParser;
@@ -226,14 +237,14 @@
     $.validator.methods.correcttype = function (value, element, param) {
         if(!enhancer) initialize();
         if (!value) return true;
-        var type = parseInt(param);
+        var type = getType($(element));
         var parser = parsers[type];
         var val = parser(value);
         
         return (val || val === 0)
-            &&(!(typeof val === "number") || numberRegEx.test(value))
-            && ((type != 1 && type != 2) || (val % 1) === 0 )
-            && (type != 1 || val >= 0);
+            && (!(typeof val === "number") || (type < 10 ? numberRegEx.test(value) : rangeRegEx.test(value)))
+            && ((type != 1 && type != 2 && type != 11 && type != 12) || (val % 1) === 0 )
+            && ((type != 1 && type != 11)  || val >= 0);
     }
     $.validator.methods.drange = function (value, element, param) {
         if (!enhancer) initialize();
@@ -255,10 +266,10 @@
             otherVal = parser(otherVal);
             if (!otherVal) continue;
             otherVal = adder(otherVal, minDelays[i]);
-            if (go && !(otherVal <= min)) min = otherVal;
             if (tvalue < otherVal) {
                 if(go) violated=true;
                 else return false;
+                if (go && !(otherVal <= min)) min = otherVal;
             }
             
         }
@@ -268,10 +279,11 @@
             otherVal = parser(otherVal);
             if (!otherVal) continue;
             otherVal=adder(otherVal, maxDelays[i]);
-            if (go && !(otherVal >= max)) max = otherVal;
+            
             if (tvalue > otherVal) {
                 if(go) violated=true;
                 else return false;
+                if (go && !(otherVal >= max)) max = otherVal;
             }
         }
         if (go && violated) {
@@ -325,7 +337,7 @@
         function addHandler(el, limits, preventKeyUp) {
             if (!limits) return;
             for (var i = 0; i < limits.length; i++) {
-                enhancer.dependency("drange", limits[i], el, preventKeyUp? ["blur"] : ["blur", "keyup"], function (t, s) {
+                enhancer.dependency("main", limits[i], el, preventKeyUp? ["blur"] : ["blur", "keyup"], function (t, s) {
                     $(t).closest('form').validate().element(t);
                 });
             }
@@ -344,6 +356,6 @@
             });
         };
         adapters.addDRange("drange", "drange", "dmins", "dminds", "dmaxs", "dmaxds");
-        enhancer["register"](null, false, null, "html5 globalized fallback", initialize);
+        enhancer["register"](null, false, initialize, "html5 globalized fallback");
     }
 })(jQuery);
