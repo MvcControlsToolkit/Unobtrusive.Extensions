@@ -259,17 +259,20 @@
         var parser = parsers[type];
         var adder = adders[type];
         var tvalue = parser(value);
-        var min, max, violated;
+        var min, max, violated, vMAx, vMin;
         for (var i = 0; i < mins.length; i++) {
             var otherVal = mins[i].value;
             if (!otherVal) continue;
             otherVal = parser(otherVal);
             if (!otherVal) continue;
             otherVal = adder(otherVal, minDelays[i]);
+            if (go && !(otherVal <= min)) min = otherVal;
             if (tvalue < otherVal) {
-                if(go) violated=true;
+                if (go) {
+                    violated = true;
+                    vMin = true;
+                }
                 else return false;
-                if (go && !(otherVal <= min)) min = otherVal;
             }
             
         }
@@ -279,19 +282,21 @@
             otherVal = parser(otherVal);
             if (!otherVal) continue;
             otherVal=adder(otherVal, maxDelays[i]);
-            
+            if (go && !(otherVal >= max)) max = otherVal;
             if (tvalue > otherVal) {
-                if(go) violated=true;
+                if (go) {
+                    violated = true;
+                    vMAx = true;
+                }
                 else return false;
-                if (go && !(otherVal >= max)) max = otherVal;
             }
         }
         if (go && violated) {
-            if (max < min) return false;
-            if (max !== undefined) {
+            if (max < min ) return false;
+            if (vMAx) {
                 $(element).val(formatters[type](max))
             }
-            else if (min !== undefined) $(element).val(formatters[type](min))
+            else if (vMin) $(element).val(formatters[type](min))
         }
         return true;
     }
