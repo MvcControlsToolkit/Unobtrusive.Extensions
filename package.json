@@ -1,9 +1,9 @@
 {
     "name": "jquery-validation-unobtrusive-extensions",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "homepage": "https://github.com/aspnet/jquery-validation-unobtrusive",
     "description": "Add-on to jQuery Unobtrusive Validation to enable globalization and dynamic content parsing.",
-    "main": "jquery.validate.unobtrusive.globalize.js",
+    "main": "jquery.validate.unobtrusive.globalize.min.js",
     "repository": {
         "type": "git",
         "url": "git://github.com/MvcControlsToolkit/Unobtrusive.Extensions.git"
@@ -37,7 +37,7 @@
         "jquery": ">=1.8",
         "jquery-validation-unobtrusive": ">=3.2.6",
         "globalize": ">=1.1.1",
-        "mvcct-enhancer": ">=1.0.0"
+        "mvcct-enhancer": ">=1.0.1"
     },
     "devDependencies": {
         "gulp": "3.9.1",
