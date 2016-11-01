@@ -41,9 +41,10 @@
 
     $.validator.unobtrusive.parseDynamic = function (selector) {
         var form = $(selector).first().closest('form');
-        if (form.length == 0) return;
+        if (!form.length && !$(selector).find('form').length) return;
         $.validator.unobtrusive.parse(selector);
-        registerFormFix(selector, form);
+        if (form.length) 
+            registerFormFix(selector, form);
     }
     $.validator.unobtrusive.parseElementDynamic = function (selector) {
         var form = $(selector).first().closest('form');

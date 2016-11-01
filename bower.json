@@ -1,6 +1,6 @@
 {
     "name": "jquery-validation-unobtrusive-extensions",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "homepage": "https://github.com/MvcControlsToolkit/Unobtrusive.Extensions",
     "description": "Add-on to jQuery Unobtrusive Validation to enable globalization and dynamic content parsing",
     "main": [
